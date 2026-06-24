@@ -13,13 +13,13 @@ function applyTheme(theme) {
 }
 
 export async function initTheme() {
-  const stored = (await chrome.storage.local.get(STORAGE_THEME_KEY))[STORAGE_THEME_KEY];
+  const stored = (await browser.storage.local.get(STORAGE_THEME_KEY))[STORAGE_THEME_KEY];
   const theme = stored || getSystemTheme();
   applyTheme(theme);
   LOG(`theme applied: ${theme}${stored ? " (stored)" : " (system)"}`);
 
   window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
-    chrome.storage.local.get(STORAGE_THEME_KEY, (result) => {
+    browser.storage.local.get(STORAGE_THEME_KEY, (result) => {
       if (!result[STORAGE_THEME_KEY]) {
         const sys = getSystemTheme();
         applyTheme(sys);
@@ -32,7 +32,7 @@ export async function initTheme() {
     const current = document.documentElement.dataset.theme || getSystemTheme();
     const next = current === "dark" ? "light" : "dark";
     applyTheme(next);
-    chrome.storage.local.set({ [STORAGE_THEME_KEY]: next });
+    browser.storage.local.set({ [STORAGE_THEME_KEY]: next });
     LOG(`theme toggled: ${next}`);
   });
 }

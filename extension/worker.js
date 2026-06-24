@@ -3,7 +3,7 @@ let wasmReady = false;
 
 async function initWasm() {
   try {
-    const mod = await import(chrome.runtime.getURL("pkg/advanced_media_player.js"));
+    const mod = await import(browser.runtime.getURL("pkg/advanced_media_player.js"));
     await mod.default();
     wasmModule = mod;
     wasmReady = true;

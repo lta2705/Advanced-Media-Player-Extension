@@ -4,8 +4,8 @@ const LOG = (msg, data) => console.log(`[AMP:bg:tabs] ${msg}`, data ?? "");
 
 export function getAudibleTabs() {
   return Promise.all([
-    new Promise((resolve) => chrome.tabs.query({ audible: true }, resolve)),
-    new Promise((resolve) => chrome.tabs.query({}, resolve)),
+    new Promise((resolve) => browser.tabs.query({ audible: true }, resolve)),
+    new Promise((resolve) => browser.tabs.query({}, resolve)),
   ]).then(([audibleTabs, allTabs]) => {
     const seen = new Set();
     const merged = [];

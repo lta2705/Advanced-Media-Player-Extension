@@ -5,26 +5,26 @@ import { mediaStateCache, currentConfig } from "./state.js";
 
 const LOG = (msg, data) => console.log(`[AMP:bg:main] ${msg}`, data ?? "");
 
-chrome.runtime.onInstalled.addListener((details) => {
+browser.runtime.onInstalled.addListener((details) => {
   LOG(`onInstalled: reason=${details.reason}`);
-  chrome.tabs.query({}, (tabs) => {
+  browser.tabs.query({}, (tabs) => {
     LOG(`injecting into ${tabs.length} existing tab(s)`);
     for (const tab of tabs) injectContentScript(tab.id);
   });
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
     LOG(`onUpdated: tab=${tabId} status=complete url=${tab?.url}`);
     injectContentScript(tabId);
   }
   if (changeInfo.audible !== undefined || changeInfo.mutedInfo) {
     LOG(`onUpdated: tab=${tabId} audible=${tab?.audible} muted=${tab?.mutedInfo?.muted}`);
-    chrome.runtime.sendMessage({ type: "AUDIBLE_TABS_CHANGED" }).catch(() => {});
+    browser.runtime.sendMessage({ type: "AUDIBLE_TABS_CHANGED" }).catch(() => {});
   }
 });
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   LOG(`onMessage: type=${msg.type} from=${sender.url ?? "?"} tab=${tabId}`);
 
@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === "AUDIO_FRAME" && tabId) {
-    chrome.tabs.sendMessage(tabId, { type: "SPECTRUM", data: msg.data }).catch(() => {});
+    browser.tabs.sendMessage(tabId, { type: "SPECTRUM", data: msg.data }).catch(() => {});
     return;
   }
 

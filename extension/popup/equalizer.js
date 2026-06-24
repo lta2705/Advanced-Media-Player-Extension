@@ -44,9 +44,8 @@ export function buildEQ() {
 }
 
 export function getConfig() {
-  const gain = parseInt($("volume-slider").value) / 100;
   return {
-    gain,
+    gain: 1.0,
     sampleRate: 44100,
     eq: eqEnabled
       ? EQ_BANDS.map((band, i) => ({
@@ -64,7 +63,7 @@ export function getConfig() {
 export function sendConfig() {
   const cfg = getConfig();
   LOG(`gain=${cfg.gain} eq=${cfg.eq.length} band(s) compressor=${cfg.compressor.enabled}`);
-  chrome.runtime.sendMessage({ type: "UPDATE_CONFIG", config: cfg });
+  browser.runtime.sendMessage({ type: "UPDATE_CONFIG", config: cfg });
 }
 
 export function wireEqControls() {

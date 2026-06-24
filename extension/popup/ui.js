@@ -23,13 +23,13 @@ export function setupCollapsible() {
       const chevron = header.querySelector(".chevron");
       const isOpen = body.classList.toggle("open");
       chevron.classList.toggle("open", isOpen);
-      chrome.storage.local.set({ [`section_${key}`]: isOpen });
+      browser.storage.local.set({ [`section_${key}`]: isOpen });
     });
   });
 }
 
 export async function restoreCollapsed() {
-  const stored = await chrome.storage.local.get(null);
+  const stored = await browser.storage.local.get(null);
   document.querySelectorAll(".section-header").forEach((header) => {
     const key = header.dataset.section;
     const body = document.getElementById(`section-${key}`);

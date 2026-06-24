@@ -9,7 +9,7 @@ function getFaviconUrl(tab) {
 
 export async function fetchAudibleTabs() {
   try {
-    const resp = await chrome.runtime.sendMessage({ type: "GET_AUDIBLE_TABS" });
+    const resp = await browser.runtime.sendMessage({ type: "GET_AUDIBLE_TABS" });
     setAudibleTabs(resp?.tabs || []);
     LOG(`${audibleTabs.length} tab(s) returned`);
   } catch (err) {
@@ -76,20 +76,20 @@ async function toggleMute(tabId) {
   if (!tab) return;
   const next = !tab.mutedInfo?.muted;
   LOG(`tab=${tabId} -> ${next ? "muted" : "unmuted"}`);
-  await chrome.tabs.update(tabId, { muted: next });
+  await browser.tabs.update(tabId, { muted: next });
   fetchAudibleTabs();
 }
 
 async function focusTab(tabId) {
   LOG(`tab=${tabId}`);
-  await chrome.tabs.update(tabId, { active: true });
-  await chrome.windows.update((await chrome.tabs.get(tabId)).windowId, { focused: true });
+  await browser.tabs.update(tabId, { active: true });
+  await browser.windows.update((await browser.tabs.get(tabId)).windowId, { focused: true });
   window.close();
 }
 
 async function closeTab(tabId) {
   LOG(`tab=${tabId}`);
-  await chrome.tabs.remove(tabId);
+  await browser.tabs.remove(tabId);
   fetchAudibleTabs();
 }
 
@@ -97,7 +97,7 @@ async function setTabVolume(tabId, vol) {
   const pct = vol / 100;
   LOG(`tab=${tabId} vol=${vol}%`);
   try {
-    await chrome.tabs.sendMessage(tabId, { type: "SET_VOLUME", volume: pct });
+    await browser.tabs.sendMessage(tabId, { type: "SET_VOLUME", volume: pct });
   } catch { LOG(`tab=${tabId} not reachable`); }
   if (tabId === activeTabId && mediaState) {
     mediaState.volume = pct;
