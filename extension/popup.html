@@ -1,214 +1,621 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced Media Player</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
-      width: 360px;
-      padding: 16px;
-      user-select: none;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      color: #e94560;
-    }
-    .track-info {
-      font-size: 12px;
-      color: #aaa;
-      margin-bottom: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .controls button {
-      background: #16213e;
-      border: none;
-      color: #eee;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .controls button:hover { background: #0f3460; }
-    .controls button:active { background: #e94560; }
-    .controls .play-btn { width: 48px; height: 48px; font-size: 20px; }
-    .seek-bar {
-      margin-bottom: 12px;
-    }
-    input[type="range"] {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      background: #333;
-      border-radius: 2px;
-      outline: none;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #e94560;
-      cursor: pointer;
-    }
-    .time-display {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #888;
-      margin-top: 2px;
-    }
-    .section {
-      margin-bottom: 10px;
-    }
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #666;
-      margin-bottom: 6px;
-    }
-    .volume-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .volume-row input[type="range"] { flex: 1; }
-    .volume-label {
-      font-size: 12px;
-      color: #aaa;
-      min-width: 36px;
-      text-align: right;
-    }
-    .eq-bands {
-      display: flex;
-      gap: 4px;
-      align-items: flex-end;
-      height: 80px;
-      margin-bottom: 8px;
-    }
-    .eq-band {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .eq-band input[type="range"] {
-      -webkit-appearance: slider-vertical;
-      writing-mode: vertical-lr;
-      direction: rtl;
-      height: 60px;
-      width: 20px;
-    }
-    .eq-band label {
-      font-size: 9px;
-      color: #888;
-      margin-top: 2px;
-    }
-    .eq-frequency { font-size: 9px; color: #666; }
-    .toggle-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .toggle-btn {
-      background: #16213e;
-      border: 1px solid #333;
-      color: #aaa;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .toggle-btn.active {
-      background: #e94560;
-      border-color: #e94560;
-      color: #fff;
-    }
-    .toggle-btn:hover { border-color: #e94560; }
-    .visualizer {
-      width: 100%;
-      height: 48px;
-      background: #0f3460;
-      border-radius: 4px;
-      margin-top: 8px;
-    }
-    .status {
-      font-size: 11px;
-      color: #555;
-      text-align: center;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Advanced Media Player</h1>
-    <span id="status-indicator" style="font-size:10px;color:#555;">● Idle</span>
-  </div>
-  <div class="track-info" id="track-info">No media detected</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Media Player</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <div class="controls">
-    <button id="prev-btn" title="Previous">⏮</button>
-    <button id="play-btn" class="play-btn" title="Play/Pause">▶</button>
-    <button id="next-btn" title="Next">⏭</button>
-  </div>
+      :root {
+        --bg: #0f0f1a;
+        --fg: #e0e0e0;
+        --border: #1e1e32;
+        --border-light: #2a2a48;
+        --hover-bg: #16162a;
+        --accent: #e94560;
+        --accent-gradient: linear-gradient(135deg, #e94560, #c23152);
+        --accent-glow: #e9456033;
+        --accent-text: #ff6b6b;
+        --muted: #444;
+        --muted-fg: #888;
+        --dim: #666;
+        --faint: #555;
+        --card-bg: #151528;
+        --card-border: #1e1e34;
+        --card-border-hover: #2a2a50;
+        --card-name: #ddd;
+        --card-hover: #222240;
+        --control-bg: #1a1a30;
+        --control-fg: #ccc;
+        --control-hover: #2a2a48;
+        --range-track: #2a2a3e;
+        --toggle-bg: #1a1a30;
+        --toggle-border: #2a2a48;
+        --toggle-fg: #999;
+        --viz-bg: #0a0a18;
+        --vis-placeholder: #333;
+        --status-fg: #555;
+        --status-val: #888;
+        --scroll-thumb: #333;
+        --badge-fg: #fff;
+        --green: #4ade80;
+        --green-glow: #4ade8066;
+        --yellow: #fbbf24;
+        --yellow-glow: #fbbf2466;
+        --tab-label: #888;
+      }
 
-  <div class="seek-bar">
-    <input type="range" id="seek-bar" min="0" max="100" value="0" />
-    <div class="time-display">
-      <span id="current-time">0:00</span>
-      <span id="duration">0:00</span>
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme="dark"]) {
+          --bg: #f2f2f7;
+          --fg: #1c1c2e;
+          --border: #ddd;
+          --hover-bg: #e8e8f0;
+          --accent: #d63350;
+          --accent-gradient: linear-gradient(135deg, #d63350, #e94560);
+          --accent-glow: #d6335022;
+          --accent-text: #c23152;
+          --muted: #bbb;
+          --muted-fg: #777;
+          --dim: #999;
+          --faint: #aaa;
+          --card-bg: #fff;
+          --card-border: #e0e0e8;
+          --card-border-hover: #ccc;
+          --card-name: #333;
+          --card-hover: #eee;
+          --control-bg: #e4e4ee;
+          --control-fg: #555;
+          --control-hover: #d0d0dc;
+          --range-track: #d4d4de;
+          --toggle-bg: #e4e4ee;
+          --toggle-border: #d0d0dc;
+          --toggle-fg: #666;
+          --viz-bg: #e8e8f0;
+          --vis-placeholder: #bbb;
+          --status-fg: #999;
+          --status-val: #777;
+          --scroll-thumb: #bbb;
+          --badge-fg: #fff;
+          --tab-label: #777;
+        }
+      }
+      [data-theme="light"] {
+        --bg: #f2f2f7;
+        --fg: #1c1c2e;
+        --border: #ddd;
+        --hover-bg: #e8e8f0;
+        --accent: #d63350;
+        --accent-gradient: linear-gradient(135deg, #d63350, #e94560);
+        --accent-glow: #d6335022;
+        --accent-text: #c23152;
+        --muted: #bbb;
+        --muted-fg: #777;
+        --dim: #999;
+        --faint: #aaa;
+        --card-bg: #fff;
+        --card-border: #e0e0e8;
+        --card-border-hover: #ccc;
+        --card-name: #333;
+        --card-hover: #eee;
+        --control-bg: #e4e4ee;
+        --control-fg: #555;
+        --control-hover: #d0d0dc;
+        --range-track: #d4d4de;
+        --toggle-bg: #e4e4ee;
+        --toggle-border: #d0d0dc;
+        --toggle-fg: #666;
+        --viz-bg: #e8e8f0;
+        --vis-placeholder: #bbb;
+        --status-fg: #999;
+        --status-val: #777;
+        --scroll-thumb: #bbb;
+        --badge-fg: #fff;
+        --tab-label: #777;
+      }
+
+      html { background: var(--bg); }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        width: 380px;
+        font-size: 13px;
+        user-select: none;
+        overflow-x: hidden;
+      }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+
+      /* ── Header ── */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .header-left .logo {
+        width: 20px;
+        height: 20px;
+        background: var(--accent-gradient);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: #fff;
+      }
+      .header h1 {
+        font-size: 14px;
+        font-weight: 600;
+        background: linear-gradient(90deg, var(--accent), var(--accent-text));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #theme-toggle {
+        background: none;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 2px;
+        line-height: 1;
+        border-radius: 4px;
+        transition: background 0.15s;
+        color: var(--muted-fg);
+      }
+      #theme-toggle:hover { background: var(--hover-bg); }
+      #status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        transition: background 0.3s, box-shadow 0.3s;
+      }
+      #status-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+      #status-dot.paused { background: var(--yellow); box-shadow: 0 0 6px var(--yellow-glow); }
+
+      /* ── Collapsible Sections ── */
+      .section { border-bottom: 1px solid var(--border); }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.15s;
+        user-select: none;
+      }
+      .section-header:hover { background: var(--hover-bg); }
+      .section-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-header .chevron {
+        font-size: 10px;
+        color: var(--dim);
+        transition: transform 0.2s;
+        display: inline-block;
+      }
+      .section-header .chevron.open { transform: rotate(90deg); }
+      .section-header .section-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--tab-label);
+      }
+      .section-header .section-badge {
+        background: var(--accent);
+        color: var(--badge-fg);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 10px;
+        line-height: 16px;
+      }
+      .section-body { padding: 0 16px 12px; display: none; }
+      .section-body.open { display: block; }
+
+      /* ── Track Info ── */
+      .track-info {
+        font-size: 12px;
+        color: var(--muted-fg);
+        text-align: center;
+        padding: 4px 0 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .track-domain {
+        font-size: 10px;
+        color: var(--faint);
+        text-align: center;
+        margin-bottom: 6px;
+      }
+
+      /* ── Controls ── */
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 8px 0;
+      }
+      .controls button {
+        background: var(--control-bg);
+        border: none;
+        color: var(--control-fg);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .controls button:hover { background: var(--control-hover); color: var(--fg); }
+      .controls button:active { transform: scale(0.92); }
+      .controls .play-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+        background: var(--accent-gradient);
+        color: #fff;
+        box-shadow: 0 2px 12px var(--accent-glow);
+      }
+      .controls .play-btn:hover { box-shadow: 0 2px 18px var(--accent-glow); }
+
+      /* ── Seek Bar ── */
+      .seek-container { margin: 4px 0 2px; }
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 4px;
+        background: var(--range-track);
+        border-radius: 2px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        transition: transform 0.1s;
+      }
+      input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+      .time-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--dim);
+        margin-top: 2px;
+      }
+
+      /* ── Volume ── */
+      .volume-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 0;
+      }
+      .volume-icon { font-size: 14px; color: var(--muted-fg); width: 20px; text-align: center; }
+      .volume-row input[type="range"] { flex: 1; }
+      .volume-label {
+        font-size: 11px;
+        color: var(--toggle-fg);
+        min-width: 30px;
+        text-align: right;
+      }
+
+      /* ── EQ ── */
+      .eq-bands {
+        display: flex;
+        gap: 3px;
+        align-items: flex-end;
+        height: 72px;
+        margin-bottom: 8px;
+      }
+      .eq-band {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .eq-band input[type="range"] {
+        -webkit-appearance: slider-vertical;
+        writing-mode: vertical-lr;
+        direction: rtl;
+        height: 54px;
+        width: 18px;
+        background: var(--range-track);
+      }
+      .eq-band label {
+        font-size: 8px;
+        color: var(--muted-fg);
+        margin-top: 2px;
+      }
+      .toggle-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .toggle-btn {
+        background: var(--toggle-bg);
+        border: 1px solid var(--toggle-border);
+        color: var(--toggle-fg);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: inherit;
+      }
+      .toggle-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--badge-fg);
+      }
+      .toggle-btn:hover { border-color: var(--accent); }
+
+      /* ── Visualizer ── */
+      .visualizer-wrap {
+        position: relative;
+        height: 48px;
+        background: var(--viz-bg);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .visualizer-wrap canvas { width: 100%; height: 100%; display: block; }
+      .vis-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--vis-placeholder);
+        pointer-events: none;
+      }
+
+      /* ── Sound Tabs ── */
+      .tab-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 4px;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .tab-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        transition: border-color 0.15s;
+      }
+      .tab-card:hover { border-color: var(--card-border-hover); }
+      .tab-card.current {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent-glow);
+      }
+      .tab-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .tab-card-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+      .tab-card-title .favicon {
+        width: 14px;
+        height: 14px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .tab-card-title .name {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--card-name);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tab-card-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .tab-card-actions button {
+        background: none;
+        border: none;
+        color: var(--muted-fg);
+        font-size: 13px;
+        cursor: pointer;
+        width: 26px;
+        height: 26px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+      .tab-card-actions button:hover { background: var(--card-hover); color: var(--fg); }
+      .tab-card-actions .mute-btn.muted { color: var(--accent); }
+      .tab-card-actions .focus-btn:hover { color: var(--green); }
+      .tab-card-actions .close-btn:hover { color: var(--accent); }
+      .tab-card-volume {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tab-card-volume input[type="range"] { height: 3px; flex: 1; }
+      .tab-card-volume .vol-pct {
+        font-size: 10px;
+        color: var(--dim);
+        min-width: 28px;
+        text-align: right;
+      }
+      .tab-playing-indicator { font-size: 14px; line-height: 1; }
+      .no-tabs {
+        text-align: center;
+        color: var(--faint);
+        font-size: 11px;
+        padding: 12px 0;
+      }
+
+      /* ── Status Bar ── */
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 10px;
+        color: var(--status-fg);
+      }
+      .status-bar .val { color: var(--status-val); }
+
+      .empty-state {
+        color: var(--faint);
+        font-size: 11px;
+        text-align: center;
+        padding: 8px 0;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">♪</div>
+        <h1>Media Player</h1>
+      </div>
+      <div class="header-right">
+        <button id="theme-toggle" title="Toggle theme">🌙</button>
+        <div id="status-dot" title="Status"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">Volume</div>
-    <div class="volume-row">
-      <input type="range" id="volume-slider" min="0" max="200" value="100" />
-      <span class="volume-label" id="volume-label">100%</span>
+    <!-- ─── Media Controls ─── -->
+    <div class="section">
+      <div class="section-header" data-section="player">
+        <div class="section-header-left">
+          <span class="chevron open">▶</span>
+          <span class="section-label">Now Playing</span>
+        </div>
+        <span id="player-badge" class="section-badge" style="display:none">0</span>
+      </div>
+      <div class="section-body open" id="section-player">
+        <div class="track-info" id="track-info">No media detected</div>
+        <div class="track-domain" id="track-domain"></div>
+
+        <div class="controls">
+          <button id="prev-btn" title="Previous">⏮</button>
+          <button id="rewind-btn" title="-10s">⏪</button>
+          <button id="play-btn" class="play-btn" title="Play/Pause">▶</button>
+          <button id="forward-btn" title="+10s">⏩</button>
+          <button id="next-btn" title="Next">⏭</button>
+        </div>
+
+        <div class="seek-container">
+          <input type="range" id="seek-bar" min="0" max="100" value="0" />
+          <div class="time-display">
+            <span id="current-time">0:00</span>
+            <span id="duration">0:00</span>
+          </div>
+        </div>
+
+        <div class="volume-row">
+          <button id="volume-icon" title="Volume">🔊</button>
+          <input type="range" id="volume-slider" min="0" max="200" value="100" />
+          <span class="volume-label" id="volume-label">100</span>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">Equalizer</div>
-    <div class="eq-bands" id="eq-bands"></div>
-    <div class="toggle-row">
-      <button class="toggle-btn active" id="eq-toggle">EQ On</button>
-      <button class="toggle-btn" id="compressor-toggle">Compressor</button>
+    <!-- ─── Sound Tabs ─── -->
+    <div class="section">
+      <div class="section-header" data-section="tabs">
+        <div class="section-header-left">
+          <span class="chevron open">▶</span>
+          <span class="section-label">Sound Tabs</span>
+        </div>
+        <span id="tabs-badge" class="section-badge">0</span>
+      </div>
+      <div class="section-body open" id="section-tabs">
+        <div id="tabs-container" class="tab-list">
+          <div class="no-tabs">No tabs playing audio</div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">Visualizer</div>
-    <canvas class="visualizer" id="visualizer"></canvas>
-  </div>
+    <!-- ─── Equalizer ─── -->
+    <div class="section">
+      <div class="section-header" data-section="eq">
+        <div class="section-header-left">
+          <span class="chevron">▶</span>
+          <span class="section-label">Equalizer</span>
+        </div>
+      </div>
+      <div class="section-body" id="section-eq">
+        <div class="eq-bands" id="eq-bands"></div>
+        <div class="toggle-row">
+          <button class="toggle-btn active" id="eq-toggle">EQ On</button>
+          <button class="toggle-btn" id="compressor-toggle">Compressor</button>
+        </div>
+      </div>
+    </div>
 
-  <div class="status" id="status-msg">Ready</div>
+    <!-- ─── Visualizer ─── -->
+    <div class="section">
+      <div class="section-header" data-section="viz">
+        <div class="section-header-left">
+          <span class="chevron">▶</span>
+          <span class="section-label">Visualizer</span>
+        </div>
+      </div>
+      <div class="section-body" id="section-viz">
+        <div class="visualizer-wrap">
+          <canvas id="visualizer"></canvas>
+          <div class="vis-placeholder">no signal</div>
+        </div>
+      </div>
+    </div>
 
-  <script src="popup.js" type="module"></script>
-</body>
+    <!-- ─── Status ─── -->
+    <div class="status-bar">
+      <span>Tabs: <span class="val" id="stat-tabs">0</span></span>
+      <span>FPS: <span class="val" id="stat-fps">0</span></span>
+      <span id="stat-msg">Ready</span>
+    </div>
+
+    <script src="popup/main.js" type="module"></script>
+  </body>
 </html>
