@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Media Player</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      width: 360px;
+      padding: 16px;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e94560;
+    }
+    .track-info {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .controls button {
+      background: #16213e;
+      border: none;
+      color: #eee;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .controls button:hover { background: #0f3460; }
+    .controls button:active { background: #e94560; }
+    .controls .play-btn { width: 48px; height: 48px; font-size: 20px; }
+    .seek-bar {
+      margin-bottom: 12px;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #e94560;
+      cursor: pointer;
+    }
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .section {
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .volume-row input[type="range"] { flex: 1; }
+    .volume-label {
+      font-size: 12px;
+      color: #aaa;
+      min-width: 36px;
+      text-align: right;
+    }
+    .eq-bands {
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+      height: 80px;
+      margin-bottom: 8px;
+    }
+    .eq-band {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .eq-band input[type="range"] {
+      -webkit-appearance: slider-vertical;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      height: 60px;
+      width: 20px;
+    }
+    .eq-band label {
+      font-size: 9px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .eq-frequency { font-size: 9px; color: #666; }
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toggle-btn {
+      background: #16213e;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-btn.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+    .toggle-btn:hover { border-color: #e94560; }
+    .visualizer {
+      width: 100%;
+      height: 48px;
+      background: #0f3460;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .status {
+      font-size: 11px;
+      color: #555;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Advanced Media Player</h1>
+    <span id="status-indicator" style="font-size:10px;color:#555;">● Idle</span>
+  </div>
+  <div class="track-info" id="track-info">No media detected</div>
+
+  <div class="controls">
+    <button id="prev-btn" title="Previous">⏮</button>
+    <button id="play-btn" class="play-btn" title="Play/Pause">▶</button>
+    <button id="next-btn" title="Next">⏭</button>
+  </div>
+
+  <div class="seek-bar">
+    <input type="range" id="seek-bar" min="0" max="100" value="0" />
+    <div class="time-display">
+      <span id="current-time">0:00</span>
+      <span id="duration">0:00</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Volume</div>
+    <div class="volume-row">
+      <input type="range" id="volume-slider" min="0" max="200" value="100" />
+      <span class="volume-label" id="volume-label">100%</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Equalizer</div>
+    <div class="eq-bands" id="eq-bands"></div>
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="eq-toggle">EQ On</button>
+      <button class="toggle-btn" id="compressor-toggle">Compressor</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Visualizer</div>
+    <canvas class="visualizer" id="visualizer"></canvas>
+  </div>
+
+  <div class="status" id="status-msg">Ready</div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
