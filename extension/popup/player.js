@@ -1,60 +1,52 @@
+// popup/player.js
+
 import { $, formatTime } from "./ui.js";
-import { activeTabId, setMediaState, mediaState } from "./store.js";
 
 const LOG = (msg, data) => console.log(`[AMP:popup:player] ${msg}`, data ?? "");
 let _volumeDragging = false;
 
-/**
- * Periodically requests the current media state from the content script
- * running in the active tab context.
- */
-export async function requestMediaState() {
-  if (typeof activeTabId === "undefined" || !activeTabId) {
-    LOG("requestMediaState: no activeTabId, skipping");
-    return;
-  }
-  try {
-    const resp = await browser.tabs.sendMessage(activeTabId, { type: "GET_MEDIA_STATE" });
-    if (resp) {
-      setMediaState(resp);
-      LOG(`playing=${resp.playing} time=${resp.currentTime}/${resp.duration} title="${resp.title}"`);
-      updateUI();
-    } else {
-      LOG("null response (no media element)");
-    }
-  } catch (err) {
-    LOG(`tab=${activeTabId} not reachable or no content script: ${err.message}`);
-    const trackInfo = document.getElementById("track-info");
-    const trackDomain = document.getElementById("track-domain");
-    const statusDot = document.getElementById("status-dot");
+// Local reference storing the target tab currently driving the primary panel view
+let currentPrimaryTab = null;
 
-    if (trackInfo) trackInfo.textContent = "No media detected";
-    if (trackDomain) trackDomain.textContent = "";
-    if (statusDot) statusDot.className = "";
-  }
+/**
+ * Updates the local data binding reference for the primary panel controller.
+ * This should be invoked by popup/main.js whenever the tabs array mutates.
+ * @param {Object|null} tabState - The tab object at index [0] of the managed queue array
+ */
+export function setPrimaryTabState(tabState) {
+  currentPrimaryTab = tabState;
 }
 
 /**
- * Synchronizes the entire Player UI view layer with the latest cached mediaState object.
+ * Synchronizes the entire primary Player UI view layer with the synchronized top queue element.
  */
 export function updateUI() {
-  // mediaState is managed globally by popup/store.js
-  if (typeof mediaState === "undefined" || !mediaState) return;
-  
-  const $ = (id) => document.getElementById(id);
+  // If no audio tabs are being managed by the background engine, clean slate the UI
+  if (!currentPrimaryTab || !currentPrimaryTab.mediaState) {
+    const trackInfoEl = $("track-info");
+    const trackDomainEl = $("track-domain");
+    const statusDotEl = $("status-dot");
+    
+    if (trackInfoEl) trackInfoEl.textContent = "No media detected";
+    if (trackDomainEl) trackDomainEl.textContent = "";
+    if (statusDotEl) statusDotEl.className = "";
+    return;
+  }
+
+  const mediaState = currentPrimaryTab.mediaState;
 
   // 1. Update and trim track title safely
-  const trackInfo = mediaState.title || "Unknown";
+  const trackTitle = currentPrimaryTab.title || "Unknown Track";
   const trackInfoEl = $("track-info");
   if (trackInfoEl) {
-    trackInfoEl.textContent = trackInfo.length > 45 ? trackInfo.slice(0, 45) + "…" : trackInfo;
+    trackInfoEl.textContent = trackTitle.length > 45 ? trackTitle.slice(0, 45) + "…" : trackTitle;
   }
 
   // 2. Extract and display source media domain hostname
   const trackDomainEl = $("track-domain");
-  if (trackDomainEl && mediaState.src) {
+  if (trackDomainEl && currentPrimaryTab.url) {
     try { 
-      trackDomainEl.textContent = new URL(mediaState.src).hostname; 
+      trackDomainEl.textContent = new URL(currentPrimaryTab.url).hostname; 
     } catch { 
       trackDomainEl.textContent = ""; 
     }
@@ -79,7 +71,7 @@ export function updateUI() {
     durationLabel.textContent = formatTime(mediaState.duration);
   }
 
-  // 4. Sync volume ranges — skip if user is actively dragging
+  // 4. Sync volume ranges — skip if user is actively dragging the slider
   const volumeSlider = $("volume-slider");
   const volumeLabel = $("volume-label");
   if (!_volumeDragging) {
@@ -88,52 +80,64 @@ export function updateUI() {
     if (volumeLabel) volumeLabel.textContent = `${targetVolumePct}`;
   }
 
-  // 5. Update graphical connection availability matrix status dot
-  const dot = document.getElementById("status-dot");
+  // 5. Update graphical status animation dot indicator
+  const dot = $("status-dot");
   if (dot) {
     dot.className = mediaState.playing ? "on" : "paused";
   }
 }
 
 /**
- * Dispatches a high-priority structural playback control command downwards to the targeted active tab.
+ * Dispatches a targeted playback control command down to the specific tab capturing index [0].
+ * @param {string} action - The string payload identifier ("toggle", "seek", "next", etc.)
+ * @param {number|null} time - Optional target timeline timestamp configuration
  */
 export async function sendPlaybackAction(action, time = null) {
-  if (typeof activeTabId === "undefined" || !activeTabId) {
-    LOG(`no activeTabId, ignoring ${action}`);
+  if (!currentPrimaryTab || !currentPrimaryTab.id) {
+    LOG(`No active primary tab context, ignoring action: ${action}`);
     return;
   }
-  LOG(`action=${action} time=${time} tab=${activeTabId}`);
+
+  const targetTabId = currentPrimaryTab.id;
+  LOG(`Dispatching action=${action} time=${time} directly to targeted tab=${targetTabId}`);
+  
   try {
     const payload = { type: "SET_PLAYBACK", action };
     if (time !== null) payload.time = time;
 
-    await browser.tabs.sendMessage(activeTabId, payload);
-    
-    // Smooth responsive UI fallback refresh loop execution window
-    if (action !== "seek") setTimeout(requestMediaState, 150);
+    // Send the execution directive targeted explicitly to the primary tab's isolated script
+    await browser.tabs.sendMessage(targetTabId, payload);
+
+    // Refresh UI from background cache after action for responsive feedback
+    setTimeout(async () => {
+      try {
+        const resp = await browser.runtime.sendMessage({ type: "GET_ALL_MANAGED_TABS" });
+        if (resp && resp.length > 0) {
+          setPrimaryTabState(resp[0]);
+          updateUI();
+        }
+      } catch (_) { /* popup might be closing */ }
+    }, 150);
   } catch (err) { 
-    LOG(`tab=${activeTabId} not reachable: ${err.message}`); 
+    LOG(`Targeted tab=${targetTabId} unreachable: ${err.message}`); 
   }
 }
 
 /**
- * Registers system listeners and assigns hooks to human interactive UI triggers.
+ * Registers system listeners and assigns hooks to human interactive primary UI triggers.
  */
 export function wirePlayerControls() {
-  const $ = (id) => document.getElementById(id);
-
   $("play-btn")?.addEventListener("click", () => sendPlaybackAction("toggle"));
   $("prev-btn")?.addEventListener("click", () => sendPlaybackAction("prev"));
   $("next-btn")?.addEventListener("click", () => sendPlaybackAction("next"));
 
   $("rewind-btn")?.addEventListener("click", () => {
-    const current = typeof mediaState !== "undefined" ? mediaState?.currentTime || 0 : 0;
+    const current = currentPrimaryTab?.mediaState?.currentTime || 0;
     sendPlaybackAction("seek", Math.max(0, current - 10));
   });
 
   $("forward-btn")?.addEventListener("click", () => {
-    const current = typeof mediaState !== "undefined" ? mediaState?.currentTime || 0 : 0;
+    const current = currentPrimaryTab?.mediaState?.currentTime || 0;
     sendPlaybackAction("seek", current + 10);
   });
 
@@ -155,11 +159,11 @@ export function wirePlayerControls() {
     const volumeLabel = $("volume-label");
     if (volumeLabel) volumeLabel.textContent = `${val}`;
 
-    if (typeof activeTabId !== "undefined" && activeTabId) {
-      browser.tabs.sendMessage(activeTabId, {
+    if (currentPrimaryTab && currentPrimaryTab.id) {
+      browser.tabs.sendMessage(currentPrimaryTab.id, {
         type: "SET_VOLUME",
         volume: normalized,
-      }).catch((err) => LOG(`Volume message relay down failed: ${err.message}`));
+      }).catch((err) => LOG(`Volume slider relay payload failed: ${err.message}`));
     }
   });
 

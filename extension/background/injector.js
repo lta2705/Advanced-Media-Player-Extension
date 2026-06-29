@@ -10,9 +10,9 @@ export async function injectContentScript(tabId) {
   } catch (e) { LOG(`failed: tab=${tabId} ${e}`); }
 }
 
-export async function initWorkerForTab(tabId) {
-  try {
-    await browser.tabs.sendMessage(tabId, { type: "INIT_WORKER" });
-    LOG(`worker init sent: tab=${tabId}`);
-  } catch { LOG(`worker init: tab=${tabId} not reachable`); }
-}
+// export async function initWorkerForTab(tabId) {
+//   try {
+//     await browser.tabs.sendMessage(tabId, { type: "INIT_WORKER" });
+//     LOG(`worker init sent: tab=${tabId}`);
+//   } catch { LOG(`worker init: tab=${tabId} not reachable`); }
+// }

@@ -1,4 +1,4 @@
-import { mediaStateCache, currentConfig, setConfig } from "./state.js";
+import { mediaStateCache, currentConfig, setConfig, updateTabState } from "./state.js";
 
 const LOG = (msg, data) => console.log(`[AMP:bg:session] ${msg}`, data ?? "");
 
@@ -60,8 +60,9 @@ export async function pollActiveTab() {
       return;
     }
     mediaStateCache.set(tabs[0].id, resp);
+    updateTabState(tabs[0].id, resp);
     LOG(`poll: tab=${tabs[0].id} playing=${resp.playing} ${Math.round(resp.currentTime)}/${Math.round(resp.duration)}s`);
-    browser.runtime.sendMessage({ type: "MEDIA_STATE_UPDATE", state: resp }).catch(() => {});
+    browser.runtime.sendMessage({ type: "MANAGED_TABS_MUTATED" }).catch(() => {});
     if ("mediaSession" in navigator) {
       navigator.mediaSession.playbackState = resp.playing ? "playing" : "paused";
     }
